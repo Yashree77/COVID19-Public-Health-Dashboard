@@ -1,13 +1,47 @@
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 
 st.title("COVID-19 Public Health Dashboard")
-st.write("Explore COVID-19 trends, country comparisons, geographical patterns, and relationships between public health indicators.")
 
-df = pd.read_csv("covid_cleaned.csv")
-df["date"] = pd.to_datetime(df["date"])
+st.write(
+    "Explore COVID-19 trends, country comparisons, geographical patterns, "
+    "and relationships between public health indicators."
+)
+
+DATA_URL = "https://catalog.ourworldindata.org/garden/covid/latest/compact/compact.csv"
+
+selected_columns = [
+    "country", "date", "code", "continent", "population",
+    "total_cases", "new_cases", "total_cases_per_million",
+    "new_cases_per_million", "total_deaths", "new_deaths",
+    "total_deaths_per_million", "new_deaths_per_million",
+    "population_density", "median_age", "life_expectancy",
+    "gdp_per_capita", "hospital_beds_per_thousand"
+]
+
+remove_entities = [
+    "Africa", "Asia", "Asia excl. China", "England",
+    "England and Wales", "Europe", "European Union (27)",
+    "High-income countries", "Low-income countries",
+    "Lower-middle-income countries", "North America",
+    "Northern Ireland", "Oceania", "Scotland", "South America",
+    "Summer Olympics 2020", "Transnistria",
+    "Upper-middle-income countries", "Wales",
+    "Winter Olympics 2022", "World", "World excl. China",
+    "World excl. China and South Korea",
+    "World excl. China, South Korea, Japan and Singapore"
+]
+
+@st.cache_data
+def load_data():
+    df = pd.read_csv(DATA_URL)
+    df = df[selected_columns]
+    df = df[~df["country"].isin(remove_entities)]
+    df["date"] = pd.to_datetime(df["date"])
+    return df
+
+df = load_data()
 
 # Date range slider
 start_date = df["date"].min().date()
@@ -20,14 +54,10 @@ date_range = st.slider(
     value=(start_date, end_date)
 )
 
-# Filter data
 filtered_df = df[
     (df["date"] >= pd.Timestamp(date_range[0])) &
     (df["date"] <= pd.Timestamp(date_range[1]))
 ]
-
-st.write("Selected Date Range:", date_range)
-st.write("Number of records:", len(filtered_df))
 
 # Country comparison
 countries = sorted(filtered_df["country"].unique())
@@ -87,8 +117,6 @@ correlation_matrix = correlation_data.corr()
 
 st.subheader("Correlation Heatmap")
 
-st.dataframe(correlation_matrix)
-
 heatmap_fig = px.imshow(
     correlation_matrix,
     text_auto=".2f",
@@ -99,3 +127,8 @@ heatmap_fig = px.imshow(
 )
 
 st.plotly_chart(heatmap_fig, use_container_width=True)
+
+
+
+
+    
